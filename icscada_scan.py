@@ -5,14 +5,49 @@ import inquirer
 selectionScan = [
   inquirer.List('ScanType',
                 message="What Scan Type do you need?",
-                choices=['Shodan', 'Netdiscover','Open Port Detection', 'Snmp-check', 'Siemens S7 ','ATG INFO','PLC SCAN','Modicon SCAN','Modbus', 'PCAP','Quit'],
+                choices=['Shodan', 'Netdiscover','Check Port Detection', 'Snmp-check', 'Siemens S7 ','ATG INFO','PLC SCAN','Modicon SCAN','Modbus', 'PCAP','Quit'],
             ),
 ]
 answers = inquirer.prompt(selectionScan)
 print(answers)
 
+def get_ipaddress():
+    sys.stdout.write("Enter IP Address For Scan:")
+    sys.stdout.flush()
+    ip=sys.stdin.readline()
+    print("the IP Address you Entered:"+ip)
+    return ip
+
+def get_port():
+    sys.stdout.write("Enter Port For Check:")
+    sys.stdout.flush()
+    port=sys.stdin.readline()
+    print("the Port you Entered:"+port)
+    return port
+
+def CheckPort():
+    ip_address = get_ipaddress()
+    port= get_port()
+    nmScan = nmap.PortScanner()
+    nmScan.scan(ip_address, port)
+    for host in nmScan.all_hosts():
+        print('Host : %s (%s)' % (host, nmScan[host].hostname()))
+        print('State : %s' % nmScan[host].state())
+        for proto in nmScan[host].all_protocols():
+            print('----------')
+            print('Protocol : %s' % proto)
+ 
+            lport = nmScan[host][proto].keys()
+      
+            for port in lport:
+                print('port : %s\tstate : %s' % (port, nmScan[host][proto][port]['state']))
+
+
 if(answers['ScanType'] == "Shodan"):
     print("in if")
+
+if(answers['ScanType'] == "Check Port Detection"):
+    CheckPort()
 
 if(answers['ScanType'] == "Netdiscover"):
     print("in if")
@@ -41,21 +76,13 @@ if(answers['ScanType'] == "PCAP"):
 if(answers['ScanType'] == "Quit"):
     exit()
 
-def get_ipaddress():
-    sys.stdout.write("Enter IP Address For Scan:")
-    sys.stdout.flush()
-    ip=sys.stdin.readline()
-    print("the IP Address you Entered:"+ip)
-    return ip
 
-def OpenPortDetection(ip):
-    return 0
+
+
 '''
-ipaddress = get_ipaddress()
-nm = nmap.PortScanner()
+
+
 scanInfo=nm.scan(ipaddress, '443')
 nm.command_line()
 print(scanInfo)
-selection = inquirer.prompt(selectionScan)
-print(selection["ScanType"])  
 '''
