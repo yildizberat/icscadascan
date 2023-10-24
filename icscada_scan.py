@@ -73,11 +73,56 @@ def shodan_fnc():
             print("Error: %s" %e) 
     return 0
 
+def snmp_check():
+    np = nmap.PortScanner()
+    ip_address= get_ipaddress()
+    result=np.scan(ip_address,'161-162','-Pn --script=snmp-info')
+    print(result)
+    return 0
+
+def siemens_SSeven():
+    np = nmap.PortScanner()
+    ip_address= get_ipaddress()
+    result=np.scan(ip_address,'102','-Pn --script=s7-info')
+    print(result)
+    return 0
+
+def atg_info():
+    np = nmap.PortScanner()
+    ip_address= get_ipaddress()
+    result=np.scan(ip_address,'10001','-Pn --script=./scripts/atg-info.nse')
+    print(result)
+    return 0
+
+def omrom_scan():
+    np = nmap.PortScanner()
+    ip_address= get_ipaddress()
+    result=np.scan(ip_address,'9600','-Pn --script=omrom-info')
+    print(result)
+    return 0
+
+def modbus_scan():
+    np = nmap.PortScanner()
+    ip_address= get_ipaddress()
+    result=np.scan(ip_address,'502','-Pn -sT --script=modbus-discover')
+    print(result)
+    return 0
+
 def main():
     selectionScan = [
         inquirer.List('ScanType',
                 message="What Scan Type do you need?",
-                choices=['Shodan','List ICS Protocol and Port', 'Netdiscover','Check Port Detection', 'Snmp-check', 'Siemens S7 ','ATG INFO','PLC SCAN','Modicon SCAN','Modbus', 'PCAP','Quit'],
+                choices=['Shodan',
+                         'List ICS Protocol and Port', 
+                         'Netdiscover',
+                         'Check Port Detection', 
+                         'Snmp-check', 
+                         'Siemens S7 ',
+                         'ATG INFO',
+                         'OMROM SCAN',
+                         'Modbus', 
+                         'PCAP',
+                         'Quit'],
             ),
             ]
     answers = inquirer.prompt(selectionScan)
@@ -101,27 +146,23 @@ def main():
         main()
 
     if(answers['ScanType'] == "Snmp-check"):
-        print("in if")
+        snmp_check()
         main()
 
     if(answers['ScanType'] == "Siemens S7 "):
-        print("in if")
+        siemens_SSeven()
         main()
 
     if(answers['ScanType'] == "ATG INFO"):
-        print("in if")
+        atg_info()
         main()
 
-    if(answers['ScanType'] == "PCL SCAN"):
-        print("in if")
-        main()
-
-    if(answers['ScanType'] == "Modicon SCAN"):
-        print("in if")
+    if(answers['ScanType'] == "OMROM SCAN"):
+        omrom_scan()
         main()
 
     if(answers['ScanType'] == "Modbus"):
-        print("in if")
+        modbus_scan()
         main()
 
     if(answers['ScanType'] == "PCAP"):
