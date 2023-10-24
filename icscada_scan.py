@@ -1,7 +1,9 @@
 import nmap
 import sys
 import inquirer
+import scapy.all as scapy
 import pandas as pd
+
 
 def list_ICSProtoPort():
     df = pd.read_csv('./icsprotoport2.csv',sep=';')
@@ -40,6 +42,22 @@ def CheckPort():
             for port in lport:
                 print('port : %s\tstate : %s' % (port, nmScan[host][proto][port]['state']))
 
+def netDiscover():
+    ip_address= get_ipaddress()
+    arp_req = scapy.ARP(pdst=ip_address)
+    broadcast=scapy.Ether(dst="ff:ff:ff:ff:ff:ff")
+    arp_req_broadcast= broadcast /arp_req
+    answ_list= scapy.srp(arp_req_broadcast, timeout=1,verbose=False)[0] 
+    clients_list=[]
+    for listelement in answ_list:
+        client_dict={"ip": listelement[1].psrc, "mac": listelement[1].hwsrc}
+        clients_list.append(client_dict)
+    print("IP\t\t\tMAC Address\n-----------------------------------------------")
+    for client in clients_list:
+        print(client["ip"] + "\t\t" + client["mac"])
+
+    return 1
+
 
 
 def main():
@@ -65,7 +83,8 @@ def main():
         main()
 
     if(answers['ScanType'] == "Netdiscover"):
-        print("in if")
+        print("Please Enter IP/Subnet\t")
+        netDiscover()
         main()
 
     if(answers['ScanType'] == "Snmp-check"):
