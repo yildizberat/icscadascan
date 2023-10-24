@@ -3,7 +3,7 @@ import sys
 import inquirer
 import scapy.all as scapy
 import pandas as pd
-
+import shodan
 
 def list_ICSProtoPort():
     df = pd.read_csv('./icsprotoport2.csv',sep=';')
@@ -55,10 +55,23 @@ def netDiscover():
     print("IP\t\t\tMAC Address\n-----------------------------------------------")
     for client in clients_list:
         print(client["ip"] + "\t\t" + client["mac"])
+    return 0
 
-    return 1
-
-
+def shodan_fnc():
+    print("Please Enter the Shodan API KEY")
+    SHODAN_API_KEY=input()
+    ip_list = input("Please enter ip(s) sperated by commas: ")
+    ips = ip_list.split(',')
+    api=shodan.Shodan(SHODAN_API_KEY)
+    for ip in ips:
+        try:
+            resutls=api.host(ip)
+            print("Open Port for %s:" %ip)
+            for port in resutls['ports']:
+                print(port)
+        except shodan.APIError as e:
+            print("Error: %s" %e) 
+    return 0
 
 def main():
     selectionScan = [
@@ -71,7 +84,7 @@ def main():
     print(answers)
 
     if(answers['ScanType'] == "Shodan"):
-        print("in if")
+        shodan_fnc()
         main()
     
     if(answers['ScanType'] == "List ICS Protocol and Port"):
