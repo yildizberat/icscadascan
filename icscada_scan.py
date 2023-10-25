@@ -5,6 +5,22 @@ import scapy.all as scapy
 import pandas as pd
 import shodan
 
+
+def banner():
+    font="""
+              _____ _____  _____    _______  _____          _____             _____  _____          _   _ _   _ ______ _____  
+             |_   _/ ____|/ ____|  / / ____|/ ____|   /\   |  __ \   /\      / ____|/ ____|   /\   | \ | | \ | |  ____|  __ \ 
+               | || |    | (___   / / (___ | |       /  \  | |  | | /  \    | (___ | |       /  \  |  \| |  \| | |__  | |__) |
+               | || |     \___ \ / / \___ \| |      / /\ \ | |  | |/ /\ \    \___ \| |      / /\ \ | . ` | . ` |  __| |  _  / 
+              _| || |____ ____) / /  ____) | |____ / ____ \| |__| / ____ \   ____) | |____ / ____ \| |\  | |\  | |____| | \ \ 
+             |_____\_____|_____/_/  |_____/ \_____/_/    \_\_____/_/    \_\ |_____/ \_____/_/    \_\_| \_|_| \_|______|_|  \_\
+
+             Created by Bandini                                                                           Github:/yildizberat                                                                               
+                                                                                                                  
+
+        """
+    print(font)
+banner()
 def list_ICSProtoPort():
     df = pd.read_csv('./icsprotoport2.csv',sep=';')
     pd.set_option('display.max_rows', df.shape[0]+1)
@@ -17,6 +33,10 @@ def get_ipaddress():
     ip=sys.stdin.readline()
     print("the IP Address you Entered:"+ip)
     return ip
+
+def sniff():
+   import sniffer
+   return sniffer
 
 def get_port():
     sys.stdout.write("Enter Port For Check:")
@@ -109,6 +129,7 @@ def modbus_scan():
     return 0
 
 def main():
+    banner()
     selectionScan = [
         inquirer.List('ScanType',
                 message="What Scan Type do you need?",
@@ -166,10 +187,12 @@ def main():
         main()
 
     if(answers['ScanType'] == "PCAP"):
-        print("in if")
+        sniff()
         main()
 
     if(answers['ScanType'] == "Quit"):
+        print('Goodbye!')
         exit()
 if __name__ == "__main__":
+    
     main()
