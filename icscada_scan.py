@@ -6,6 +6,9 @@ import pandas as pd
 import shodan
 
 
+ACD_ADAPTED_SHODAN_QUERY_FILE_NAME = "ACD_ADAPTED_SHODAN_QUERY_FILE.txt"
+
+
 def banner():
     font="""
               _____ _____  _____    _______  _____          _____             _____  _____          _   _ _   _ ______ _____  
@@ -93,6 +96,23 @@ def shodan_fnc():
             print("Error: %s" %e) 
     return 0
 
+
+def acd_adapted_read_shodan_query_file():
+    splitted_list_data = []
+    with open(ACD_ADAPTED_SHODAN_QUERY_FILE_NAME, "r") as file_data:
+        file_data_lines = file_data.readlines()
+        for file_data_line in file_data_lines:
+            splitted_list_data.append(file_data_line.split("|"))
+    return splitted_list_data
+
+
+def acd_adapted_main():
+    splitted_list_data = acd_adapted_read_shodan_query_file()
+    print(splitted_list_data)
+    # print("TEST")
+    return 0
+
+
 def snmp_check():
     np = nmap.PortScanner()
     ip_address= get_ipaddress()
@@ -133,7 +153,8 @@ def main():
     selectionScan = [
         inquirer.List('ScanType',
                 message="What Scan Type do you need?",
-                choices=['Shodan',
+                choices=['ACD Adapted',
+                         'Shodan',
                          'List ICS Protocol and Port', 
                          'Netdiscover',
                          'Check Port Detection', 
@@ -148,6 +169,10 @@ def main():
             ]
     answers = inquirer.prompt(selectionScan)
     print(answers)
+
+    if (answers['ScanType'] == "ACD Adapted"):
+        acd_adapted_main()
+        main()
 
     if(answers['ScanType'] == "Shodan"):
         shodan_fnc()
