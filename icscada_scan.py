@@ -4,10 +4,15 @@ import inquirer
 import scapy.all as scapy
 import pandas as pd
 import shodan
+import os
+import csv
+import requests
+from requests.exceptions import RequestException
 
 
 ACD_ADAPTED_SHODAN_QUERY_FILE_NAME = "ACD_ADAPTED_SHODAN_QUERY_FILE.txt"
-
+SHODAN_API_KEY = ""
+SHODAN_OUTPUT_FILES_LOCATION = "./shodan_output_files"
 
 def banner():
     font="""
@@ -106,10 +111,113 @@ def acd_adapted_read_shodan_query_file():
     return splitted_list_data
 
 
+def acd_adapted_query_shodan(splitted_list_data):
+    shodan_query_data_row = {}
+    shodan_output_file_names = []
+
+
+    for splitted_list_data_part in splitted_list_data:
+        shodan_query_data_row["Vendor"] = splitted_list_data_part[0]
+        shodan_query_data_row["Query"] = splitted_list_data_part[1].rstrip("\n")
+        os.system(f'shodan init {SHODAN_API_KEY}')
+        os.system(f'shodan download {shodan_query_data_row["Vendor"]} {shodan_query_data_row["Query"]}')
+        os.system(f'shodan convert --fields ip_str,port,transport {shodan_query_data_row["Vendor"]}.json.gz csv')
+
+        df = pd.read_csv(f'{shodan_query_data_row["Vendor"]}.csv')
+        new_column = pd.DataFrame({'Vendor': [shodan_query_data_row["Vendor"] for i in range(df.shape[0])], 'Query': [shodan_query_data_row["Query"] for i in range(df.shape[0])]})
+        new_column = new_column.merge(df, left_index=True, right_index=True)
+        os.system("mkdir shodan_output_files")
+        new_column.rename(columns={'ip_str': 'IP', 'port': 'Port', 'transport': 'Protocol'}, inplace=True)
+        new_column.to_csv(f'{SHODAN_OUTPUT_FILES_LOCATION}/{shodan_query_data_row["Vendor"]}.csv', index=False)
+        shodan_output_file_names.append(f'{SHODAN_OUTPUT_FILES_LOCATION}/{shodan_query_data_row["Vendor"]}.csv')
+
+    return shodan_output_file_names
+
+
+# Function to process each line of CSV data
+def process_csv_row(row):
+    ip_str_data = row[2]
+    port_str_data = row[3]
+    protocol_data = row[4]
+    print("Processing {}".format(row))
+
+    if "tcp" in protocol_data:
+        http_status_code = None
+        https_status_code = None
+
+        # Check HTTP
+        try:
+            http_status_code = requests.get(f"http://{ip_str_data}:{port_str_data}", verify=False,
+                                            timeout=5).status_code
+        except RequestException:
+            http_status_code = 'Unavailable'
+
+        # Check HTTPS
+        try:
+            https_status_code = requests.get(f"https://{ip_str_data}:{port_str_data}", verify=False,
+                                             timeout=5).status_code
+        except RequestException:
+            https_status_code = 'Unavailable'
+
+        # Choose the valid status code if available
+        status_code_data = http_status_code if http_status_code != 'Unavailable' else https_status_code
+        status_code_data = status_code_data if status_code_data != 'Unavailable' else 'Unavailable'
+
+        return [ip_str_data, port_str_data, protocol_data, str(status_code_data)]
+
+    elif "udp" in protocol_data:
+        nmap = nmap3.NmapScanTechniques()
+        result = nmap.nmap_udp_scan(ip_str_data, args=f"-Pn -p {port_str_data}")
+        result_state = result[ip_str_data]['ports'][0]['state']
+
+        return [ip_str_data, port_str_data, protocol_data, str(result_state)]
+
+    return None
+
+
+# Remove duplicates based on IP, Port, and Protocol
+def remove_duplicates(csv_reader):
+    unique_rows = []
+    seen = set()
+    for row in csv_reader:
+        ip_port_protocol = (row[2], row[3], row[4])
+        if ip_port_protocol not in seen:
+            seen.add(ip_port_protocol)
+            unique_rows.append(row)
+    return unique_rows
+
+
+def acd_adapted_add_nmap_status(shodan_input_file_names):
+    for input_info in shodan_input_file_names:
+        INPUT_CSV_FILE = input_info
+        OUTPUT_CSV_FILE = input_info
+
+        # Read the CSV file and process the data
+        with open(INPUT_CSV_FILE, 'r') as csv_file:
+            csv_reader = csv.reader(csv_file)
+
+            # Remove duplicate rows
+            unique_rows = remove_duplicates(csv_reader)
+
+            # Create the output header line
+            output_header = ["Vendor", "Query", "IP", "Port", "Protocol", "Status"]
+
+            # Process each row and write to the output CSV file
+            with open(OUTPUT_CSV_FILE, 'w', newline='') as output_csv_file:
+                csv_writer = csv.writer(output_csv_file)
+                csv_writer.writerow(output_header)
+
+                for row in unique_rows:
+                    vendor_name, query_name = row[0], row[1]  # Read vendor and query names from each row
+                    processed_row = process_csv_row(row)
+                    if processed_row:
+                        csv_writer.writerow([vendor_name, query_name] + processed_row)
+
+
 def acd_adapted_main():
     splitted_list_data = acd_adapted_read_shodan_query_file()
-    print(splitted_list_data)
-    # print("TEST")
+    shodan_output_file_names = acd_adapted_query_shodan(splitted_list_data)
+    acd_adapted_add_nmap_status(shodan_output_file_names)
     return 0
 
 
